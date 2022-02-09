@@ -1,26 +1,37 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/config"
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/data"
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/model"
 )
 
 type IWalletService interface {
-	Get(username string) int
+	GetBalance(username string) (int, error)
+	CreateWallet(username string) *model.Wallet
 }
 
-func NewWalletService() IWalletService {
-	return &WalletService{}
+func NewWalletService(data data.IWalletData) IWalletService {
+	return &WalletService{
+		data: data,
+	}
 }
 
 type WalletService struct {
 	data data.IWalletData
 }
 
-func (*WalletService) Get(username string) int { return 0 }
+func (s *WalletService) GetBalance(username string) (int, error) {
+	return s.data.GetBalance(username)
+}
 
-func (s *WalletService) Create(username string) *model.Wallet {
+func (s *WalletService) CreateWallet(username string) *model.Wallet {
+	fmt.Println("SERVICE CREATE")
 	balance := config.Getconf().InitialBalanceAmount
-	return s.data.Create(username, balance)
+	fmt.Println(balance)
+	wallet := s.data.CreateWallet(username, balance)
+	fmt.Println(wallet)
+	return wallet
 }

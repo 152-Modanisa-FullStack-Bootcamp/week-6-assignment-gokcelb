@@ -15,6 +15,7 @@ type IWalletHandler interface {
 	GetAll(w http.ResponseWriter, r *http.Request)
 	Get(w http.ResponseWriter, r *http.Request)
 	Create(w http.ResponseWriter, r *http.Request)
+	Update(w http.ResponseWriter, r *http.Request)
 }
 
 func NewWalletHandler(service service.IWalletService) IWalletHandler {
@@ -38,8 +39,10 @@ func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Req
 
 	if r.Method == "GET" {
 		h.Get(w, r)
-	} else if r.Method == "POST" {
+	} else if r.Method == "PUT" {
 		h.Create(w, r)
+	} else if r.Method == "POST" {
+		h.Update(w, r)
 	}
 }
 
@@ -47,18 +50,36 @@ func (*WalletHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 }
 
-var walletReq model.Wallet
-
 func (h *WalletHandler) Get(w http.ResponseWriter, r *http.Request) {
 	username := r.RequestURI[1:]
-	balance := h.service.Get(username)
-	w.Write([]byte(fmt.Sprintf("%s's account balance: %d", username, balance)))
+	balance, err := h.service.GetBalance(username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(fmt.Sprintf("%s's wallet balance: %d", username, balance)))
 }
 
-func (*WalletHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *WalletHandler) Create(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("HANDLER CREATE")
+	username := r.RequestURI[1:]
+	if len(username) == 0 {
+		http.Error(w, "Username can't be empty", http.StatusBadRequest)
+		return
+	}
+
+	wallet := h.service.CreateWallet(username)
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(fmt.Sprintf("Wallet owner: %s, Wallet balance: %d", wallet.Username, wallet.Balance)))
+}
+
+var walletReq model.Wallet
+
+func (*WalletHandler) Update(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&walletReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-	fmt.Println(w, walletReq)
 }
