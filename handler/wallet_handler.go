@@ -27,6 +27,7 @@ type WalletHandler struct {
 }
 
 func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Request) {
+	// redirect to related methods according to URI
 	rex := regexp.MustCompile(`/[a-z]*`)
 	if !rex.MatchString(r.RequestURI) {
 		http.Error(w, "URI can't be compiled", http.StatusBadRequest)
@@ -46,8 +47,16 @@ func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Req
 	}
 }
 
-func (*WalletHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+func (h *WalletHandler) GetAll(w http.ResponseWriter, r *http.Request) {
+	wallets := h.service.GetAllWallets()
+	walletBytes, err := json.Marshal(wallets)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	w.WriteHeader(http.StatusOK)
+	w.Write(walletBytes)
 }
 
 func (h *WalletHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -75,11 +84,23 @@ func (h *WalletHandler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(fmt.Sprintf("Wallet owner: %s, Wallet balance: %d", wallet.Username, wallet.Balance)))
 }
 
-var walletReq model.Wallet
+var wallet model.Wallet
 
-func (*WalletHandler) Update(w http.ResponseWriter, r *http.Request) {
-	err := json.NewDecoder(r.Body).Decode(&walletReq)
+func (h *WalletHandler) Update(w http.ResponseWriter, r *http.Request) {
+	username := r.RequestURI[1:]
+	err := json.NewDecoder(r.Body).Decode(&wallet)
+	fmt.Println(wallet)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+
+	updatedBalance, err := h.service.UpdateBalance(username, wallet.Balance)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(fmt.Sprintf("Updated wallet balance: %d", updatedBalance)))
 }

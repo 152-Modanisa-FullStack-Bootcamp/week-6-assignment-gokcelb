@@ -8,8 +8,10 @@ import (
 )
 
 type IWalletData interface {
+	GetAllWallets() map[string]int
 	GetBalance(username string) (int, error)
 	CreateWallet(username string, balance int) *model.Wallet
+	UpdateBalance(username string, balance int, minimumBalance int) (int, error)
 }
 
 // initialize WalletData with empty map,
@@ -22,6 +24,10 @@ func NewWalletData() IWalletData {
 
 type WalletData struct {
 	wallets map[string]int
+}
+
+func (d *WalletData) GetAllWallets() map[string]int {
+	return d.wallets
 }
 
 func (d *WalletData) GetBalance(username string) (int, error) {
@@ -47,4 +53,13 @@ func (d *WalletData) CreateWallet(username string, balance int) *model.Wallet {
 		Username: username,
 		Balance:  balance,
 	}
+}
+
+func (d *WalletData) UpdateBalance(username string, balance int, minimumBalance int) (int, error) {
+	newBalance := d.wallets[username] + balance
+	if newBalance < minimumBalance {
+		return -1, errors.New(fmt.Sprintf("Wallet balance cannot be lower than %d", minimumBalance))
+	}
+	d.wallets[username] = newBalance
+	return newBalance, nil
 }
