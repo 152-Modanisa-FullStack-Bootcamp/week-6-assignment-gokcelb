@@ -4,45 +4,44 @@ import (
 	"fmt"
 
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/config"
-	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/data"
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/model"
 )
 
-type IWalletService interface {
+type WalletRepository interface {
 	GetAllWallets() map[string]int
 	GetBalance(username string) (int, error)
-	CreateWallet(username string) *model.Wallet
-	UpdateBalance(username string, balance int) (int, error)
+	CreateWallet(username string, balance int) *model.Wallet
+	UpdateBalance(username string, balance int, minimumBalance int) (int, error)
 }
 
-func NewWalletService(data data.IWalletData) IWalletService {
-	return &WalletService{
-		data: data,
+func NewWallet(repo WalletRepository) *DefaultWalletService {
+	return &DefaultWalletService{
+		repository: repo,
 	}
 }
 
-type WalletService struct {
-	data data.IWalletData
+type DefaultWalletService struct {
+	repository WalletRepository
 }
 
-func (s *WalletService) GetAllWallets() map[string]int {
-	return s.data.GetAllWallets()
+func (s *DefaultWalletService) GetAllWallets() map[string]int {
+	return s.repository.GetAllWallets()
 }
 
-func (s *WalletService) GetBalance(username string) (int, error) {
-	return s.data.GetBalance(username)
+func (s *DefaultWalletService) GetBalance(username string) (int, error) {
+	return s.repository.GetBalance(username)
 }
 
-func (s *WalletService) CreateWallet(username string) *model.Wallet {
+func (s *DefaultWalletService) CreateWallet(username string) *model.Wallet {
 	fmt.Println("SERVICE CREATE")
 	balance := config.Getconf().InitialBalanceAmount
 	fmt.Println(balance)
-	wallet := s.data.CreateWallet(username, balance)
+	wallet := s.repository.CreateWallet(username, balance)
 	fmt.Println(wallet)
 	return wallet
 }
 
-func (s *WalletService) UpdateBalance(username string, balance int) (int, error) {
+func (s *DefaultWalletService) UpdateBalance(username string, balance int) (int, error) {
 	minimumBalance := config.Getconf().MinimumBalanceAmount
-	return s.data.UpdateBalance(username, balance, minimumBalance)
+	return s.repository.UpdateBalance(username, balance, minimumBalance)
 }

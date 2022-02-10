@@ -1,6 +1,6 @@
 package model
 
 type Wallet struct {
-	Username string
-	Balance  int `json:"balance"`
+	Username string `json:"username,omitempty"`
+	Balance  int    `json:"balance"`
 }
