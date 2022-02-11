@@ -4,11 +4,7 @@ import (
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/model"
 )
 
-// initialize WalletData with empty map,
-// otherwise map values are nil, instead of zero value
-var wallets = make(map[string]*model.Wallet)
-
-func NewWallet() *DefaultWalletRepository {
+func NewWallet(wallets map[string]*model.Wallet) *DefaultWalletRepository {
 	return &DefaultWalletRepository{wallets: wallets}
 }
 
