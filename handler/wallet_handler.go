@@ -32,10 +32,10 @@ var route = &Route{
 
 // Consumer-side interface
 type WalletService interface {
-	GetAllWallets() map[string]int
-	GetBalance(username string) (int, error)
-	CreateWallet(username string) *model.Wallet
-	UpdateBalance(username string, balance int) (int, error)
+	GetAll() map[string]*model.Wallet
+	Get(username string) (*model.Wallet, error)
+	Create(username string) *model.Wallet
+	Update(username string, balance int) (*model.Wallet, error)
 }
 
 func NewWallet(service WalletService) *WalletHandler {
@@ -91,7 +91,7 @@ func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Req
 }
 
 func (h *WalletHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	wallets := h.service.GetAllWallets()
+	wallets := h.service.GetAll()
 
 	response, err := json.Marshal(wallets)
 	if err != nil {
@@ -111,7 +111,7 @@ func (h *WalletHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := h.service.GetBalance(username)
+	balance, err := h.service.Get(username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -138,7 +138,7 @@ func (h *WalletHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wallet := h.service.CreateWallet(username)
+	wallet := h.service.Create(username)
 
 	jsonResponse, err := json.Marshal(wallet)
 	if err != nil {
@@ -161,7 +161,7 @@ func (h *WalletHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedBalance, err := h.service.UpdateBalance(username, wallet.Balance)
+	updatedBalance, err := h.service.Update(username, wallet.Balance)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
