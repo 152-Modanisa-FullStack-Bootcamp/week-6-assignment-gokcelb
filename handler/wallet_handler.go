@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -99,45 +100,32 @@ func (h *WalletHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }
 
 func (h *WalletHandler) Get(w http.ResponseWriter, r *http.Request) {
 	username := route.PullParam("username")
-	if len(username) == 0 {
-		http.Error(w, "Route parameter error", http.StatusInternalServerError)
-		return
-	}
-
-	balance, err := h.service.Get(username)
+	wallet, err := h.service.Get(username)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	response := map[string]interface{}{}
-	response["username"] = username
-	response["balance"] = balance
-	jsonResponse, err := json.Marshal(response)
+	jsonResponse, err := json.Marshal(wallet)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
 
 func (h *WalletHandler) Create(w http.ResponseWriter, r *http.Request) {
 	username := route.PullParam("username")
-	if len(username) == 0 {
-		http.Error(w, "Username cannot be empty", http.StatusBadRequest)
-		return
-	}
-
 	wallet := h.service.Create(username)
 
 	jsonResponse, err := json.Marshal(wallet)
@@ -145,15 +133,14 @@ func (h *WalletHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonResponse)
 }
 
 var wallet model.Wallet
 
 func (h *WalletHandler) Update(w http.ResponseWriter, r *http.Request) {
-	// TODO: Should return an error if wallet doesn't exist
 	username := route.PullParam("username")
 	err := json.NewDecoder(r.Body).Decode(&wallet)
 	if err != nil {
@@ -161,21 +148,37 @@ func (h *WalletHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedBalance, err := h.service.Update(username, wallet.Balance)
+	updatedWallet, err := h.service.Update(username, wallet.Balance)
 	if err != nil {
+		if err.Error() == newNotExistsError(username).Error() {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	response := map[string]interface{}{}
-	response["username"] = username
-	response["balance"] = updatedBalance
-	jsonResponse, err := json.Marshal(response)
+	jsonResponse, err := json.Marshal(updatedWallet)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonResponse)
+}
+
+// Detect when wallet doesn't exist to send 400 NotFound error
+type NotExistsError struct {
+	message string
+}
+
+func (e *NotExistsError) Error() string {
+	return e.message
+}
+
+func newNotExistsError(username string) *NotExistsError {
+	return &NotExistsError{
+		message: fmt.Sprintf("No wallet belonging to %s exists", username),
+	}
 }
