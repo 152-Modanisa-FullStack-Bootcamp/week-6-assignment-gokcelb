@@ -7,6 +7,13 @@ import (
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/model"
 )
 
+var (
+	_minimumBalance = config.Getconf().MinimumBalanceAmount
+
+	ErrWalletNotExists   = fmt.Errorf("Wallet does not exist")
+	ErrBalanceBelowLimit = fmt.Errorf("Wallet balance cannot be lower than %d", _minimumBalance)
+)
+
 type WalletRepository interface {
 	Exists(username string) bool
 	GetAll() map[string]*model.Wallet
@@ -31,7 +38,7 @@ func (s *DefaultWalletService) GetAll() map[string]*model.Wallet {
 
 func (s *DefaultWalletService) Get(username string) (*model.Wallet, error) {
 	if !s.repository.Exists(username) {
-		return nil, fmt.Errorf("No wallet belonging to %s exists", username)
+		return nil, ErrWalletNotExists
 	}
 
 	return s.repository.Get(username), nil
@@ -57,9 +64,8 @@ func (s *DefaultWalletService) Update(username string, newBalance int) (*model.W
 	}
 
 	// If current balance + new balance is below minimum balance amount, return error
-	minimumBalance := config.Getconf().MinimumBalanceAmount
-	if currentWallet.Balance+newBalance < minimumBalance {
-		return nil, fmt.Errorf("Wallet balance cannot be lower than %d", minimumBalance)
+	if currentWallet.Balance+newBalance < _minimumBalance {
+		return nil, ErrBalanceBelowLimit
 	}
 
 	// Update without any problems, since we handled all errors

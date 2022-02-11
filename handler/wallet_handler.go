@@ -2,11 +2,12 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/model"
+	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/service"
 )
 
 const forwardSlash = "/"
@@ -49,10 +50,28 @@ type WalletHandler struct {
 	service WalletService
 }
 
+type HTTPError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func writeErr(w http.ResponseWriter, code int, msg string) {
+	httpErr := HTTPError{
+		Code:    code,
+		Message: msg,
+	}
+	bytesResponse, _ := json.Marshal(httpErr)
+	w.WriteHeader(code)
+	w.Write(bytesResponse)
+}
+
 func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Request) {
 	// Clean the last forward slash if there is one
 	r.RequestURI = strings.TrimSuffix(r.RequestURI, "/")
 	pathsAndParams := strings.Split(r.RequestURI, forwardSlash)
+
+	// Set content type to json
+	w.Header().Set("Content-Type", "application/json")
 
 	// If first element of pathsAndParams is not an empty string,
 	// this means the URI does not start with a forward slash,
@@ -61,7 +80,7 @@ func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Req
 	// more than two forward slashes because we do not support
 	// that sort of endpoint
 	if len(pathsAndParams[0]) != 0 || len(pathsAndParams) > 2 {
-		http.Error(w, "Invalid URI", http.StatusNotFound)
+		writeErr(w, http.StatusNotFound, "Invalid URI")
 		return
 	}
 
@@ -70,7 +89,7 @@ func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Req
 		if r.Method == "GET" {
 			h.GetAll(w, r)
 		} else {
-			http.Error(w, "Invalid endpoint", http.StatusNotFound)
+			writeErr(w, http.StatusNotFound, "Invalid endpoint")
 		}
 		return
 	}
@@ -96,11 +115,10 @@ func (h *WalletHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	response, err := json.Marshal(wallets)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }
@@ -108,18 +126,20 @@ func (h *WalletHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 func (h *WalletHandler) Get(w http.ResponseWriter, r *http.Request) {
 	username := route.PullParam("username")
 	wallet, err := h.service.Get(username)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+	if err != nil && errors.Is(err, service.ErrWalletNotExists) {
+		writeErr(w, http.StatusNotFound, err.Error())
+		return
+	} else if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	jsonResponse, err := json.Marshal(wallet)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(jsonResponse)
 }
@@ -130,10 +150,9 @@ func (h *WalletHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	jsonResponse, err := json.Marshal(wallet)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeErr(w, http.StatusInternalServerError, err.Error())
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonResponse)
 }
@@ -144,41 +163,27 @@ func (h *WalletHandler) Update(w http.ResponseWriter, r *http.Request) {
 	username := route.PullParam("username")
 	err := json.NewDecoder(r.Body).Decode(&wallet)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeErr(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	updatedWallet, err := h.service.Update(username, wallet.Balance)
-	if err != nil {
-		if err.Error() == newNotExistsError(username).Error() {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err != nil && errors.Is(err, service.ErrWalletNotExists) {
+		writeErr(w, http.StatusNotFound, err.Error())
+		return
+	} else if err != nil && errors.Is(err, service.ErrBalanceBelowLimit) {
+		writeErr(w, http.StatusBadRequest, err.Error())
+		return
+	} else if err != nil {
+		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	jsonResponse, err := json.Marshal(updatedWallet)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeErr(w, http.StatusInternalServerError, err.Error())
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonResponse)
-}
-
-// Detect when wallet doesn't exist to send 400 NotFound error
-type NotExistsError struct {
-	message string
-}
-
-func (e *NotExistsError) Error() string {
-	return e.message
-}
-
-func newNotExistsError(username string) *NotExistsError {
-	return &NotExistsError{
-		message: fmt.Sprintf("No wallet belonging to %s exists", username),
-	}
 }
