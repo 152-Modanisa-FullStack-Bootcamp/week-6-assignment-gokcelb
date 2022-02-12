@@ -5,12 +5,13 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 const (
 	defaultPath   = ".config\\"
 	fileExtention = ".json"
-	serviceDir    = "c:\\Users\\bilgi\\Desktop\\bc\\week-6-assignment-gokcelb\\service"
+	rootDir       = "c:\\users\\bilgi\\desktop\\bc\\week-6-assignment-gokcelb"
 )
 
 var c = &Conf{}
@@ -32,7 +33,7 @@ func Getconf() *Conf {
 	}
 	log.Print("current directory:", currWD)
 
-	if currWD == serviceDir {
+	if strings.ToLower(currWD) != rootDir {
 		path = "..\\.config\\"
 	} else {
 		path = defaultPath
