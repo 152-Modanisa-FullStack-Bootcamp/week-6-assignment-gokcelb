@@ -3,6 +3,7 @@ package service_test
 import (
 	"testing"
 
+	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/config"
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/mocks"
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/model"
 	"github.com/152-Modanisa-FullStack-Bootcamp/week-6-assignment-gokcelb/service"
@@ -11,6 +12,7 @@ import (
 )
 
 func TestGetAll(t *testing.T) {
+
 	mockRepo := createMockRepository(t)
 	mockWallets := []model.Wallet{
 		{Username: "yuksel", Balance: 350},
@@ -18,7 +20,7 @@ func TestGetAll(t *testing.T) {
 	}
 	mockRepo.EXPECT().GetAll().Return(mockWallets)
 
-	s := service.NewWallet(mockRepo)
+	s := service.NewWallet(nil, mockRepo)
 	wallets := s.GetAll()
 
 	assert.Equal(t, mockWallets, wallets)
@@ -28,7 +30,7 @@ func TestGet_WalletDoesNotExist_ReturnsNilAndErrWalletNotExists(t *testing.T) {
 	mockRepo := createMockRepository(t)
 	mockRepo.EXPECT().Exists("doga").Return(false)
 
-	s := service.NewWallet(mockRepo)
+	s := service.NewWallet(nil, mockRepo)
 	wallet, err := s.Get("doga")
 
 	assert.Empty(t, wallet)
@@ -42,7 +44,7 @@ func TestGet_WalletExists_ReturnsWalletAndNil(t *testing.T) {
 	mockWallet := model.Wallet{Username: "lacin", Balance: 70}
 	mockRepo.EXPECT().Get("lacin").Return(mockWallet).Times(1)
 
-	s := service.NewWallet(mockRepo)
+	s := service.NewWallet(nil, mockRepo)
 	wallet, err := s.Get("lacin")
 
 	assert.Equal(t, mockWallet, wallet)
@@ -56,7 +58,7 @@ func TestCreate_WalletAlreadyExists_ReturnsExistingWallet(t *testing.T) {
 	mockWallet := model.Wallet{Username: "lacin", Balance: 0}
 	mockRepo.EXPECT().Get("lacin").Return(mockWallet).Times(1)
 
-	s := service.NewWallet(mockRepo)
+	s := service.NewWallet(&config.Conf{}, mockRepo)
 	wallet := s.Create("lacin")
 
 	assert.Equal(t, mockWallet, wallet)
@@ -69,7 +71,7 @@ func TestCreate_ReturnsNewWallet(t *testing.T) {
 	mockWallet := &model.Wallet{Username: "yulet", Balance: 0}
 	mockRepo.EXPECT().Save(mockWallet).Return().Times(1)
 
-	s := service.NewWallet(mockRepo)
+	s := service.NewWallet(&config.Conf{}, mockRepo)
 	wallet := s.Create("yulet")
 
 	assert.Equal(t, *mockWallet, wallet)
@@ -124,7 +126,7 @@ func TestUpdate(t *testing.T) {
 				mockRepo.EXPECT().Update(tC.username, tC.newBalance).Return(tC.expectedWallet)
 			}
 
-			s := service.NewWallet(mockRepo)
+			s := service.NewWallet(&config.Conf{MinimumBalanceAmount: -100}, mockRepo)
 			updatedWallet, err := s.Update(tC.username, tC.newBalance)
 
 			assert.Equal(t, tC.expectedWallet, updatedWallet)

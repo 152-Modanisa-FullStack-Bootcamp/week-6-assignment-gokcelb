@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetconf(t *testing.T) {
-	c := config.Getconf()
+func TestRead(t *testing.T) {
+	c, _ := config.Read("../.config/local.json")
 
 	assert.Equal(t, 0, c.InitialBalanceAmount)
 	assert.Equal(t, -100, c.MinimumBalanceAmount)

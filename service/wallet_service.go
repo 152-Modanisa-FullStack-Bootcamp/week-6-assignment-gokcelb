@@ -8,10 +8,8 @@ import (
 )
 
 var (
-	_minimumBalance = config.Getconf().MinimumBalanceAmount
-
 	ErrWalletNotExists   = fmt.Errorf("Wallet does not exist")
-	ErrBalanceBelowLimit = fmt.Errorf("Wallet balance cannot be lower than %d", _minimumBalance)
+	ErrBalanceBelowLimit = fmt.Errorf("Wallet balance cannot be lower than minimum limit")
 )
 
 type WalletRepository interface {
@@ -22,34 +20,38 @@ type WalletRepository interface {
 	Update(username string, balance int) model.Wallet
 }
 
-func NewWallet(repo WalletRepository) *DefaultWalletService {
-	return &DefaultWalletService{repo}
+func NewWallet(conf *config.Conf, repo WalletRepository) *DefaultWalletService {
+	return &DefaultWalletService{
+		repo: repo,
+		conf: conf,
+	}
 }
 
 type DefaultWalletService struct {
-	repository WalletRepository
+	repo WalletRepository
+	conf *config.Conf
 }
 
 func (s *DefaultWalletService) GetAll() []model.Wallet {
-	return s.repository.GetAll()
+	return s.repo.GetAll()
 }
 
 func (s *DefaultWalletService) Get(username string) (model.Wallet, error) {
-	if !s.repository.Exists(username) {
+	if !s.repo.Exists(username) {
 		return model.Wallet{}, ErrWalletNotExists
 	}
 
-	return s.repository.Get(username), nil
+	return s.repo.Get(username), nil
 }
 
 func (s *DefaultWalletService) Create(username string) model.Wallet {
-	if s.repository.Exists(username) {
-		return s.repository.Get(username)
+	if s.repo.Exists(username) {
+		return s.repo.Get(username)
 	}
 
-	initialBalance := config.Getconf().InitialBalanceAmount
+	initialBalance := s.conf.InitialBalanceAmount
 	wallet := &model.Wallet{Username: username, Balance: initialBalance}
-	s.repository.Save(wallet)
+	s.repo.Save(wallet)
 	return *wallet
 }
 
@@ -62,10 +64,10 @@ func (s *DefaultWalletService) Update(username string, balanceToAdd int) (model.
 
 	// If current balance + new balance is below minimum balance amount, return error
 	newBalance := currentWallet.Balance + balanceToAdd
-	if newBalance < _minimumBalance {
+	if newBalance < s.conf.MinimumBalanceAmount {
 		return model.Wallet{}, ErrBalanceBelowLimit
 	}
 
 	// Update without any problems, since we handled all errors
-	return s.repository.Update(username, newBalance), nil
+	return s.repo.Update(username, newBalance), nil
 }
