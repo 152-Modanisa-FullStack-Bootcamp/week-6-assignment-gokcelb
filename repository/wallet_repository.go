@@ -18,7 +18,7 @@ func (r *DefaultWalletRepository) Exists(username string) bool {
 }
 
 func (r *DefaultWalletRepository) GetAll() []model.Wallet {
-	var wallets []model.Wallet
+	wallets := []model.Wallet{}
 	for _, wallet := range r.wallets {
 		wallets = append(wallets, *wallet)
 	}

@@ -65,7 +65,7 @@ func TestGetAll(t *testing.T) {
 	}
 	result := r.GetAll()
 
-	assert.Equal(t, walletsList, result)
+	assert.EqualValues(t, walletsList, result)
 }
 
 func TestGet(t *testing.T) {
