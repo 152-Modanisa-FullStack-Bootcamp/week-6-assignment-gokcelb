@@ -12,15 +12,9 @@ import (
 
 func TestGetAll(t *testing.T) {
 	mockRepo := createMockRepository(t)
-	mockWallets := map[string]*model.Wallet{
-		"yuksel": {
-			Username: "yuksel",
-			Balance:  350,
-		},
-		"lacin": {
-			Username: "lacin",
-			Balance:  0,
-		},
+	mockWallets := []model.Wallet{
+		{Username: "yuksel", Balance: 350},
+		{Username: "lacin", Balance: 0},
 	}
 	mockRepo.EXPECT().GetAll().Return(mockWallets)
 
@@ -37,7 +31,7 @@ func TestGet_WalletDoesNotExist_ReturnsNilAndErrWalletNotExists(t *testing.T) {
 	s := service.NewWallet(mockRepo)
 	wallet, err := s.Get("doga")
 
-	assert.Nil(t, wallet)
+	assert.Empty(t, wallet)
 	assert.EqualError(t, err, service.ErrWalletNotExists.Error())
 }
 
@@ -45,10 +39,7 @@ func TestGet_WalletExists_ReturnsWalletAndNil(t *testing.T) {
 	mockRepo := createMockRepository(t)
 	mockRepo.EXPECT().Exists("lacin").Return(true).Times(1)
 
-	mockWallet := &model.Wallet{
-		Username: "lacin",
-		Balance:  70,
-	}
+	mockWallet := model.Wallet{Username: "lacin", Balance: 70}
 	mockRepo.EXPECT().Get("lacin").Return(mockWallet).Times(1)
 
 	s := service.NewWallet(mockRepo)
@@ -62,10 +53,7 @@ func TestCreate_WalletAlreadyExists_ReturnsExistingWallet(t *testing.T) {
 	mockRepo := createMockRepository(t)
 	mockRepo.EXPECT().Exists("lacin").Return(true).Times(1)
 
-	mockWallet := &model.Wallet{
-		Username: "lacin",
-		Balance:  0,
-	}
+	mockWallet := model.Wallet{Username: "lacin", Balance: 0}
 	mockRepo.EXPECT().Get("lacin").Return(mockWallet).Times(1)
 
 	s := service.NewWallet(mockRepo)
@@ -78,16 +66,13 @@ func TestCreate_ReturnsNewWallet(t *testing.T) {
 	mockRepo := createMockRepository(t)
 	mockRepo.EXPECT().Exists("yulet").Return(false).Times(1)
 
-	mockWallet := &model.Wallet{
-		Username: "yulet",
-		Balance:  -10,
-	}
-	mockRepo.EXPECT().Create("yulet", 0).Return(mockWallet).Times(1)
+	mockWallet := &model.Wallet{Username: "yulet", Balance: 0}
+	mockRepo.EXPECT().Save(mockWallet).Return().Times(1)
 
 	s := service.NewWallet(mockRepo)
 	wallet := s.Create("yulet")
 
-	assert.Equal(t, mockWallet, wallet)
+	assert.Equal(t, *mockWallet, wallet)
 }
 
 func TestUpdate(t *testing.T) {
@@ -96,44 +81,35 @@ func TestUpdate(t *testing.T) {
 		username       string
 		newBalance     int
 		exists         bool
-		currWallet     *model.Wallet
-		expectedWallet *model.Wallet
+		currWallet     model.Wallet
+		expectedWallet model.Wallet
 		expectedError  error
 	}{
 		{
-			desc:       "given lacin and 400, expect lacin's updated wallet and nil",
-			username:   "lacin",
-			newBalance: 400,
-			exists:     true,
-			currWallet: &model.Wallet{
-				Username: "lacin",
-				Balance:  0,
-			},
-			expectedWallet: &model.Wallet{
-				Username: "lacin",
-				Balance:  400,
-			},
-			expectedError: nil,
+			desc:           "given lacin and 400, expect lacin's updated wallet and nil",
+			username:       "lacin",
+			newBalance:     400,
+			exists:         true,
+			currWallet:     model.Wallet{Username: "lacin", Balance: 0},
+			expectedWallet: model.Wallet{Username: "lacin", Balance: 400},
+			expectedError:  nil,
 		},
 		{
 			desc:           "given doga and 100, expect nil and wallet not exists error",
 			username:       "doga",
 			newBalance:     100,
 			exists:         false,
-			currWallet:     nil,
-			expectedWallet: nil,
+			currWallet:     model.Wallet{},
+			expectedWallet: model.Wallet{},
 			expectedError:  service.ErrWalletNotExists,
 		},
 		{
-			desc:       "given lacin and -300, expect nil and balance below limit error",
-			username:   "lacin",
-			newBalance: -300,
-			exists:     true,
-			currWallet: &model.Wallet{
-				Username: "lacin",
-				Balance:  0,
-			},
-			expectedWallet: nil,
+			desc:           "given lacin and -300, expect nil and balance below limit error",
+			username:       "lacin",
+			newBalance:     -300,
+			exists:         true,
+			currWallet:     model.Wallet{Username: "lacin", Balance: 0},
+			expectedWallet: model.Wallet{},
 			expectedError:  service.ErrBalanceBelowLimit,
 		},
 	}
@@ -144,7 +120,7 @@ func TestUpdate(t *testing.T) {
 			if tC.exists {
 				mockRepo.EXPECT().Get(tC.username).Return(tC.currWallet)
 			}
-			if tC.expectedWallet != nil {
+			if tC.expectedWallet != (model.Wallet{}) {
 				mockRepo.EXPECT().Update(tC.username, tC.newBalance).Return(tC.expectedWallet)
 			}
 

@@ -18,10 +18,7 @@ type Route struct {
 }
 
 func (route *Route) PullParam(param string) string {
-	if val, ok := route.params[param]; ok {
-		return val
-	}
-	return ""
+	return route.params[param]
 }
 
 func (route *Route) PushParam(param string, paramVal string) {
@@ -34,10 +31,10 @@ var route = &Route{
 
 // Consumer-side interface
 type WalletService interface {
-	GetAll() map[string]*model.Wallet
-	Get(username string) (*model.Wallet, error)
-	Create(username string) *model.Wallet
-	Update(username string, balance int) (*model.Wallet, error)
+	GetAll() []model.Wallet
+	Get(username string) (model.Wallet, error)
+	Create(username string) model.Wallet
+	Update(username string, balance int) (model.Wallet, error)
 }
 
 func NewWallet(service WalletService) *WalletHandler {
@@ -80,24 +77,24 @@ func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Req
 	// more than two forward slashes because we do not support
 	// that sort of endpoint
 	if len(pathsAndParams[0]) != 0 || len(pathsAndParams) > 2 {
-		writeErr(w, http.StatusNotFound, "Invalid URI")
+		writeErr(w, http.StatusNotFound, "Not found")
 		return
 	}
 
 	// If URI was just forward slash, now it's empty because we trimmed it
-	if r.RequestURI == "" {
-		if r.Method == "GET" {
-			h.GetAll(w, r)
-		} else {
-			writeErr(w, http.StatusNotFound, "Invalid endpoint")
-		}
+	if r.RequestURI == "" && r.Method != http.MethodGet {
+		writeErr(w, http.StatusNotFound, "Not Found")
+		return
+	}
+
+	if r.RequestURI == "" && r.Method == http.MethodGet {
+		h.GetAll(w, r)
 		return
 	}
 
 	// If the method progresses until this point, it means the endpoint
 	// contains a route parameter. I assume that everything after the
-	// forward slash comprises the username, and push it as a route
-	// parameter, then I will pull this username route parameter
+	// forward slash comprises the username, and push it as a route param
 	username := pathsAndParams[1]
 	route.PushParam("username", username)
 

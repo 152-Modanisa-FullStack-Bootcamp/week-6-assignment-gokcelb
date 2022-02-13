@@ -16,56 +16,54 @@ var (
 
 type WalletRepository interface {
 	Exists(username string) bool
-	GetAll() map[string]*model.Wallet
-	Get(username string) *model.Wallet
-	Create(username string, balance int) *model.Wallet
-	Update(username string, balance int) *model.Wallet
+	GetAll() []model.Wallet
+	Get(username string) model.Wallet
+	Save(wallet *model.Wallet)
+	Update(username string, balance int) model.Wallet
 }
 
 func NewWallet(repo WalletRepository) *DefaultWalletService {
-	return &DefaultWalletService{
-		repository: repo,
-	}
+	return &DefaultWalletService{repo}
 }
 
 type DefaultWalletService struct {
 	repository WalletRepository
 }
 
-func (s *DefaultWalletService) GetAll() map[string]*model.Wallet {
+func (s *DefaultWalletService) GetAll() []model.Wallet {
 	return s.repository.GetAll()
 }
 
-func (s *DefaultWalletService) Get(username string) (*model.Wallet, error) {
+func (s *DefaultWalletService) Get(username string) (model.Wallet, error) {
 	if !s.repository.Exists(username) {
-		return nil, ErrWalletNotExists
+		return model.Wallet{}, ErrWalletNotExists
 	}
 
 	return s.repository.Get(username), nil
 }
 
-func (s *DefaultWalletService) Create(username string) *model.Wallet {
+func (s *DefaultWalletService) Create(username string) model.Wallet {
 	if s.repository.Exists(username) {
 		return s.repository.Get(username)
 	}
 
-	// If wallet does not already exists, send config's initial balance amount
-	// as balance in order to create new wallet
 	initialBalance := config.Getconf().InitialBalanceAmount
-	wallet := s.repository.Create(username, initialBalance)
-	return wallet
+	wallet := &model.Wallet{Username: username, Balance: initialBalance}
+	s.repository.Save(wallet)
+	return *wallet
 }
 
-func (s *DefaultWalletService) Update(username string, newBalance int) (*model.Wallet, error) {
+func (s *DefaultWalletService) Update(username string, balanceToAdd int) (model.Wallet, error) {
 	// Check if we can successfully get the wallet, if not throw not exists error
 	currentWallet, err := s.Get(username)
 	if err != nil {
-		return nil, err
+		return model.Wallet{}, err
 	}
 
 	// If current balance + new balance is below minimum balance amount, return error
-	if currentWallet.Balance+newBalance < _minimumBalance {
-		return nil, ErrBalanceBelowLimit
+	newBalance := currentWallet.Balance + balanceToAdd
+	if newBalance < _minimumBalance {
+		return model.Wallet{}, ErrBalanceBelowLimit
 	}
 
 	// Update without any problems, since we handled all errors

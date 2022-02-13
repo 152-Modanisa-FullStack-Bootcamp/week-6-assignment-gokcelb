@@ -15,6 +15,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func createMockWalletService(t *testing.T) *mocks.MockWalletService {
+	return mocks.NewMockWalletService(gomock.NewController(t))
+}
+
+type updateRequestBody struct {
+	Balance int `json:"balance"`
+}
+
+type errorResponseBody struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 func TestHandleWalletEndpoints_InvalidEndpoints(t *testing.T) {
 	testCases := []struct {
 		desc               string
@@ -53,117 +66,93 @@ func TestHandleWalletEndpoints_RedirectsToGetAll(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 
 	mockService := createMockWalletService(t)
-	mockWallets := map[string]*model.Wallet{
-		"lacin": {
-			Username: "lacin",
-			Balance:  0,
-		},
-		"yuksel": {
-			Username: "yuksel",
-			Balance:  200,
-		},
+	mockWallets := []model.Wallet{
+		{Username: "lacin", Balance: 0},
+		{Username: "yuksel", Balance: 200},
 	}
 	mockService.EXPECT().GetAll().Return(mockWallets).Times(1)
 
 	h := handler.NewWallet(mockService)
 	h.HandleWalletEndpoints(resW, req)
 
-	assert.Equal(t, http.StatusOK, resW.Result().StatusCode)
+	resBody, _ := json.Marshal(mockWallets)
 
+	assert.Equal(t, http.StatusOK, resW.Result().StatusCode)
+	assert.Equal(t, string(resBody), resW.Body.String())
 }
 
 func TestHandleWalletEndpoints_RedirectsToGet(t *testing.T) {
-	testCases := []struct {
-		desc               string
-		target             string
-		username           string
-		expectedWallet     *model.Wallet
-		expectedErr        error
-		expectedStatusCode int
-	}{
-		{
-			desc:               "given target /lacin, service get is called with lacin and returns nil and not exists error",
-			target:             "/lacin",
-			username:           "lacin",
-			expectedWallet:     nil,
-			expectedErr:        service.ErrWalletNotExists,
-			expectedStatusCode: http.StatusNotFound,
-		},
-		{
-			desc:     "given target /doga, service get is called with doga and returns doga's wallet and nil",
-			target:   "/doga",
-			username: "doga",
-			expectedWallet: &model.Wallet{
-				Username: "doga",
-				Balance:  0,
-			},
-			expectedErr:        nil,
-			expectedStatusCode: http.StatusOK,
-		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			resW := httptest.NewRecorder()
-			req := httptest.NewRequest(http.MethodGet, tC.target, http.NoBody)
+	t.Run("given target /lacin, service get is called with lacin and returns empty object and not exists error", func(t *testing.T) {
+		resW := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/lacin", http.NoBody)
 
-			mockService := createMockWalletService(t)
-			mockService.EXPECT().Get(tC.username).Return(tC.expectedWallet, tC.expectedErr)
+		mockService := createMockWalletService(t)
+		mockService.EXPECT().Get("lacin").Return(model.Wallet{}, service.ErrWalletNotExists)
 
-			h := handler.NewWallet(mockService)
-			h.HandleWalletEndpoints(resW, req)
+		h := handler.NewWallet(mockService)
+		h.HandleWalletEndpoints(resW, req)
 
-			assert.Equal(t, tC.expectedStatusCode, resW.Result().StatusCode)
+		resBody, _ := json.Marshal(errorResponseBody{
+			Code:    http.StatusNotFound,
+			Message: service.ErrWalletNotExists.Error(),
 		})
-	}
+
+		assert.Equal(t, http.StatusNotFound, resW.Result().StatusCode)
+		assert.Equal(t, string(resBody), resW.Body.String())
+	})
+
+	t.Run("given target /doga, service get is called with doga and returns doga's wallet and nil", func(t *testing.T) {
+		resW := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/doga", http.NoBody)
+
+		mockService := createMockWalletService(t)
+		mockWallet := model.Wallet{Username: "doga", Balance: 50}
+		mockService.EXPECT().Get("doga").Return(mockWallet, nil)
+
+		h := handler.NewWallet(mockService)
+		h.HandleWalletEndpoints(resW, req)
+
+		resBody, _ := json.Marshal(mockWallet)
+
+		assert.Equal(t, http.StatusOK, resW.Result().StatusCode)
+		assert.Equal(t, string(resBody), resW.Body.String())
+	})
 }
 
 func TestHandleWalletEndpoints_RedirectsToCreate(t *testing.T) {
-	testCases := []struct {
-		desc               string
-		httpMethod         string
-		target             string
-		username           string
-		expectedStatusCode int
-	}{
-		{
-			desc:               "given method PUT and target /fatma, calls service create with fatma and returns fatma's wallet",
-			httpMethod:         http.MethodPut,
-			target:             "/fatma",
-			username:           "fatma",
-			expectedStatusCode: http.StatusCreated,
-		},
-		{
-			desc:               "given method PUT and targete /lacin/, calls service create with lacin and returns lacin's wallet",
-			httpMethod:         http.MethodPut,
-			target:             "/lacin/",
-			username:           "lacin",
-			expectedStatusCode: http.StatusCreated,
-		},
-	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			resW := httptest.NewRecorder()
-			req := httptest.NewRequest(tC.httpMethod, tC.target, http.NoBody)
+	t.Run("given method PUT and target /fatma, calls service create with fatma and returns fatma's wallet", func(t *testing.T) {
+		resW := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPut, "/fatma", http.NoBody)
 
-			mockService := createMockWalletService(t)
-			mockService.EXPECT().Create(tC.username)
+		mockService := createMockWalletService(t)
+		mockWallet := model.Wallet{Username: "fatma", Balance: 0}
+		mockService.EXPECT().Create("fatma").Return(mockWallet)
 
-			h := handler.NewWallet(mockService)
-			h.HandleWalletEndpoints(resW, req)
+		h := handler.NewWallet(mockService)
+		h.HandleWalletEndpoints(resW, req)
 
-			assert.Equal(t, tC.expectedStatusCode, resW.Result().StatusCode)
+		resBody, _ := json.Marshal(mockWallet)
 
-		})
-	}
-}
+		assert.Equal(t, http.StatusCreated, resW.Result().StatusCode)
+		assert.Equal(t, string(resBody), resW.Body.String())
+	})
 
-type updateRequestBody struct {
-	Balance int `json:"balance"`
-}
+	t.Run("given method PUT and targete /lacin/, calls service create with lacin and returns lacin's wallet", func(t *testing.T) {
+		resW := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPut, "/lacin/", http.NoBody)
 
-type errorResponseBody struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+		mockService := createMockWalletService(t)
+		mockWallet := model.Wallet{Username: "lacin", Balance: 0}
+		mockService.EXPECT().Create("lacin").Return(mockWallet)
+
+		h := handler.NewWallet(mockService)
+		h.HandleWalletEndpoints(resW, req)
+
+		resBody, _ := json.Marshal(mockWallet)
+
+		assert.Equal(t, http.StatusCreated, resW.Result().StatusCode)
+		assert.Equal(t, string(resBody), resW.Body.String())
+	})
 }
 
 func TestHandleWalletEndpoints_RedirectsToUpdate(t *testing.T) {
@@ -177,7 +166,7 @@ func TestHandleWalletEndpoints_RedirectsToUpdate(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/lacin", bytes.NewReader(body))
 
 		mockService := createMockWalletService(t)
-		updatedWallet := &model.Wallet{
+		updatedWallet := model.Wallet{
 			Username: "lacin",
 			Balance:  100,
 		}
@@ -202,7 +191,7 @@ func TestHandleWalletEndpoints_RedirectsToUpdate(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/lacin", bytes.NewReader(body))
 
 		mockService := createMockWalletService(t)
-		mockService.EXPECT().Update("lacin", 100).Return(nil, service.ErrWalletNotExists)
+		mockService.EXPECT().Update("lacin", 100).Return(model.Wallet{}, service.ErrWalletNotExists)
 
 		h := handler.NewWallet(mockService)
 		h.HandleWalletEndpoints(resW, req)
@@ -227,7 +216,7 @@ func TestHandleWalletEndpoints_RedirectsToUpdate(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/lacin", bytes.NewReader(body))
 
 		mockService := createMockWalletService(t)
-		mockService.EXPECT().Update("lacin", -500).Return(nil, service.ErrBalanceBelowLimit)
+		mockService.EXPECT().Update("lacin", -500).Return(model.Wallet{}, service.ErrBalanceBelowLimit)
 
 		h := handler.NewWallet(mockService)
 		h.HandleWalletEndpoints(resW, req)
@@ -241,8 +230,4 @@ func TestHandleWalletEndpoints_RedirectsToUpdate(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, resW.Result().StatusCode)
 		assert.Equal(t, string(resBody), resW.Body.String())
 	})
-}
-
-func createMockWalletService(t *testing.T) *mocks.MockWalletService {
-	return mocks.NewMockWalletService(gomock.NewController(t))
 }

@@ -35,10 +35,10 @@ func (m *MockWalletService) EXPECT() *MockWalletServiceMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockWalletService) Create(arg0 string) *model.Wallet {
+func (m *MockWalletService) Create(arg0 string) model.Wallet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0)
-	ret0, _ := ret[0].(*model.Wallet)
+	ret0, _ := ret[0].(model.Wallet)
 	return ret0
 }
 
@@ -49,10 +49,10 @@ func (mr *MockWalletServiceMockRecorder) Create(arg0 interface{}) *gomock.Call {
 }
 
 // Get mocks base method.
-func (m *MockWalletService) Get(arg0 string) (*model.Wallet, error) {
+func (m *MockWalletService) Get(arg0 string) (model.Wallet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0)
-	ret0, _ := ret[0].(*model.Wallet)
+	ret0, _ := ret[0].(model.Wallet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -64,10 +64,10 @@ func (mr *MockWalletServiceMockRecorder) Get(arg0 interface{}) *gomock.Call {
 }
 
 // GetAll mocks base method.
-func (m *MockWalletService) GetAll() map[string]*model.Wallet {
+func (m *MockWalletService) GetAll() []model.Wallet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAll")
-	ret0, _ := ret[0].(map[string]*model.Wallet)
+	ret0, _ := ret[0].([]model.Wallet)
 	return ret0
 }
 
@@ -78,10 +78,10 @@ func (mr *MockWalletServiceMockRecorder) GetAll() *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockWalletService) Update(arg0 string, arg1 int) (*model.Wallet, error) {
+func (m *MockWalletService) Update(arg0 string, arg1 int) (model.Wallet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", arg0, arg1)
-	ret0, _ := ret[0].(*model.Wallet)
+	ret0, _ := ret[0].(model.Wallet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

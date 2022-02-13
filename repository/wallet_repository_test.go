@@ -59,9 +59,13 @@ func TestGetAll(t *testing.T) {
 	}
 	r := repository.NewWallet(wallets)
 
+	var walletsList []model.Wallet
+	for _, wallet := range wallets {
+		walletsList = append(walletsList, *wallet)
+	}
 	result := r.GetAll()
 
-	assert.Equal(t, wallets, result)
+	assert.Equal(t, walletsList, result)
 }
 
 func TestGet(t *testing.T) {
@@ -80,28 +84,22 @@ func TestGet(t *testing.T) {
 	testCases := []struct {
 		desc           string
 		givenUsername  string
-		expectedWallet *model.Wallet
+		expectedWallet model.Wallet
 	}{
 		{
-			desc:          "given lacin, expect lacin's wallet",
-			givenUsername: "lacin",
-			expectedWallet: &model.Wallet{
-				Username: "lacin",
-				Balance:  100,
-			},
+			desc:           "given lacin, expect lacin's wallet",
+			givenUsername:  "lacin",
+			expectedWallet: model.Wallet{Username: "lacin", Balance: 100},
 		},
 		{
-			desc:          "given fatma, expect fatma's wallet",
-			givenUsername: "fatma",
-			expectedWallet: &model.Wallet{
-				Username: "fatma",
-				Balance:  -50,
-			},
+			desc:           "given fatma, expect fatma's wallet",
+			givenUsername:  "fatma",
+			expectedWallet: model.Wallet{Username: "fatma", Balance: -50},
 		},
 		{
 			desc:           "given non existant name, expect zero values",
 			givenUsername:  "doga",
-			expectedWallet: nil,
+			expectedWallet: model.Wallet{},
 		},
 	}
 	for _, tC := range testCases {
@@ -113,7 +111,7 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) {
+func TestSave(t *testing.T) {
 	wallets := map[string]*model.Wallet{
 		"lacin": {
 			Username: "lacin",
@@ -126,7 +124,8 @@ func TestCreate(t *testing.T) {
 	}
 	r := repository.NewWallet(wallets)
 
-	newWallet := r.Create("halil", 0)
+	newWallet := &model.Wallet{Username: "halil", Balance: 0}
+	r.Save(newWallet)
 
 	assert.Contains(t, wallets, newWallet.Username)
 	assert.Equal(t, "halil", newWallet.Username)
@@ -150,25 +149,19 @@ func TestUpdate(t *testing.T) {
 		desc           string
 		givenUsername  string
 		givenBalance   int
-		expectedWallet *model.Wallet
+		expectedWallet model.Wallet
 	}{
 		{
-			desc:          "given lacin and -20, expect wallet's balance to be 80",
-			givenUsername: "lacin",
-			givenBalance:  -20,
-			expectedWallet: &model.Wallet{
-				Username: "lacin",
-				Balance:  80,
-			},
+			desc:           "given lacin and -20, expect wallet's balance to be -20",
+			givenUsername:  "lacin",
+			givenBalance:   -20,
+			expectedWallet: model.Wallet{Username: "lacin", Balance: -20},
 		},
 		{
-			desc:          "given fatma and 50, expect wallet's balance to be 0",
-			givenUsername: "fatma",
-			givenBalance:  50,
-			expectedWallet: &model.Wallet{
-				Username: "fatma",
-				Balance:  0,
-			},
+			desc:           "given fatma and 50, expect wallet's balance to be 50",
+			givenUsername:  "fatma",
+			givenBalance:   50,
+			expectedWallet: model.Wallet{Username: "fatma", Balance: 50},
 		},
 	}
 	for _, tC := range testCases {

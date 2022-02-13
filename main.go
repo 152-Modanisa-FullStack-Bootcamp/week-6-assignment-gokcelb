@@ -11,10 +11,10 @@ import (
 
 func main() {
 	wallets := make(map[string]*model.Wallet)
-	r := repository.NewWallet(wallets)
-	s := service.NewWallet(r)
-	h := handler.NewWallet(s)
+	walletRepository := repository.NewWallet(wallets)
+	walletService := service.NewWallet(walletRepository)
+	walletHandler := handler.NewWallet(walletService)
 
-	http.HandleFunc("/", h.HandleWalletEndpoints)
+	http.HandleFunc("/", walletHandler.HandleWalletEndpoints)
 	http.ListenAndServe(":8000", nil)
 }

@@ -34,20 +34,6 @@ func (m *MockWalletRepository) EXPECT() *MockWalletRepositoryMockRecorder {
 	return m.recorder
 }
 
-// Create mocks base method.
-func (m *MockWalletRepository) Create(arg0 string, arg1 int) *model.Wallet {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", arg0, arg1)
-	ret0, _ := ret[0].(*model.Wallet)
-	return ret0
-}
-
-// Create indicates an expected call of Create.
-func (mr *MockWalletRepositoryMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockWalletRepository)(nil).Create), arg0, arg1)
-}
-
 // Exists mocks base method.
 func (m *MockWalletRepository) Exists(arg0 string) bool {
 	m.ctrl.T.Helper()
@@ -63,10 +49,10 @@ func (mr *MockWalletRepositoryMockRecorder) Exists(arg0 interface{}) *gomock.Cal
 }
 
 // Get mocks base method.
-func (m *MockWalletRepository) Get(arg0 string) *model.Wallet {
+func (m *MockWalletRepository) Get(arg0 string) model.Wallet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0)
-	ret0, _ := ret[0].(*model.Wallet)
+	ret0, _ := ret[0].(model.Wallet)
 	return ret0
 }
 
@@ -77,10 +63,10 @@ func (mr *MockWalletRepositoryMockRecorder) Get(arg0 interface{}) *gomock.Call {
 }
 
 // GetAll mocks base method.
-func (m *MockWalletRepository) GetAll() map[string]*model.Wallet {
+func (m *MockWalletRepository) GetAll() []model.Wallet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAll")
-	ret0, _ := ret[0].(map[string]*model.Wallet)
+	ret0, _ := ret[0].([]model.Wallet)
 	return ret0
 }
 
@@ -90,11 +76,23 @@ func (mr *MockWalletRepositoryMockRecorder) GetAll() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAll", reflect.TypeOf((*MockWalletRepository)(nil).GetAll))
 }
 
+// Save mocks base method.
+func (m *MockWalletRepository) Save(arg0 *model.Wallet) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Save", arg0)
+}
+
+// Save indicates an expected call of Save.
+func (mr *MockWalletRepositoryMockRecorder) Save(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*MockWalletRepository)(nil).Save), arg0)
+}
+
 // Update mocks base method.
-func (m *MockWalletRepository) Update(arg0 string, arg1 int) *model.Wallet {
+func (m *MockWalletRepository) Update(arg0 string, arg1 int) model.Wallet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Update", arg0, arg1)
-	ret0, _ := ret[0].(*model.Wallet)
+	ret0, _ := ret[0].(model.Wallet)
 	return ret0
 }
 

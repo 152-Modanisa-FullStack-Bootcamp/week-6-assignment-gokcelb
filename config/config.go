@@ -26,7 +26,7 @@ func Getconf() *Conf {
 	// We will change path according to current working directory
 	// because while the application normally runs on the root directory,
 	// it runs on the service directory when we run tests
-	var path string
+	path := defaultPath
 	currWD, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -35,8 +35,6 @@ func Getconf() *Conf {
 
 	if strings.ToLower(currWD) != rootDir {
 		path = "..\\.config\\"
-	} else {
-		path = defaultPath
 	}
 	log.Print("path:", path)
 
@@ -50,8 +48,8 @@ func Getconf() *Conf {
 	if err != nil {
 		panic(err)
 	}
-	err = json.Unmarshal(read, c)
-	if err != nil {
+
+	if err := json.Unmarshal(read, c); err != nil {
 		panic(err)
 	}
 

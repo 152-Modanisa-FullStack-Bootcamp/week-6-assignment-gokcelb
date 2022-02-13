@@ -17,24 +17,26 @@ func (r *DefaultWalletRepository) Exists(username string) bool {
 	return ok
 }
 
-func (r *DefaultWalletRepository) GetAll() map[string]*model.Wallet {
-	return r.wallets
-}
-
-func (r *DefaultWalletRepository) Get(username string) *model.Wallet {
-	return r.wallets[username]
-}
-
-func (r *DefaultWalletRepository) Create(username string, initialBalance int) *model.Wallet {
-	wallet := &model.Wallet{
-		Username: username,
-		Balance:  initialBalance,
+func (r *DefaultWalletRepository) GetAll() []model.Wallet {
+	var wallets []model.Wallet
+	for _, wallet := range r.wallets {
+		wallets = append(wallets, *wallet)
 	}
-	r.wallets[username] = wallet
-	return wallet
+	return wallets
 }
 
-func (r *DefaultWalletRepository) Update(username string, balance int) *model.Wallet {
-	r.wallets[username].Balance += balance
-	return r.wallets[username]
+func (r *DefaultWalletRepository) Get(username string) model.Wallet {
+	if wallet, ok := r.wallets[username]; ok {
+		return *wallet
+	}
+	return model.Wallet{}
+}
+
+func (r *DefaultWalletRepository) Save(wallet *model.Wallet) {
+	r.wallets[wallet.Username] = wallet
+}
+
+func (r *DefaultWalletRepository) Update(username string, balance int) model.Wallet {
+	r.wallets[username].Balance = balance
+	return *r.wallets[username]
 }
