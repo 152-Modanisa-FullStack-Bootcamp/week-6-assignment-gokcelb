@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func createMockRepository(t *testing.T) *mocks.MockWalletRepository {
+	return mocks.NewMockWalletRepository(gomock.NewController(t))
+}
+
 func TestGetAll(t *testing.T) {
 
 	mockRepo := createMockRepository(t)
@@ -135,6 +139,39 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
-func createMockRepository(t *testing.T) *mocks.MockWalletRepository {
-	return mocks.NewMockWalletRepository(gomock.NewController(t))
+func TestDelete(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		username    string
+		exists      bool
+		expectedErr error
+	}{
+		{
+			desc:        "wallet belonging to given username exists, return nil error",
+			username:    "lacin",
+			exists:      true,
+			expectedErr: nil,
+		},
+		{
+			desc:        "wallet belonging to given username does not exist, return not exists error",
+			username:    "doga",
+			exists:      false,
+			expectedErr: service.ErrWalletNotExists,
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			mockRepo := createMockRepository(t)
+			mockRepo.EXPECT().Exists(tC.username).Return(tC.exists)
+
+			if tC.exists {
+				mockRepo.EXPECT().Delete(tC.username)
+			}
+
+			s := service.NewWallet(&config.Conf{}, mockRepo)
+			err := s.Delete(tC.username)
+
+			assert.Equal(t, tC.expectedErr, err)
+		})
+	}
 }

@@ -34,6 +34,18 @@ func (m *MockWalletRepository) EXPECT() *MockWalletRepositoryMockRecorder {
 	return m.recorder
 }
 
+// Delete mocks base method.
+func (m *MockWalletRepository) Delete(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Delete", arg0)
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockWalletRepositoryMockRecorder) Delete(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockWalletRepository)(nil).Delete), arg0)
+}
+
 // Exists mocks base method.
 func (m *MockWalletRepository) Exists(arg0 string) bool {
 	m.ctrl.T.Helper()
