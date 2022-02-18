@@ -18,6 +18,7 @@ type WalletRepository interface {
 	Get(username string) model.Wallet
 	Save(wallet *model.Wallet)
 	Update(username string, balance int) model.Wallet
+	Delete(username string)
 }
 
 func NewWallet(conf *config.Conf, repo WalletRepository) *DefaultWalletService {
@@ -70,4 +71,13 @@ func (s *DefaultWalletService) Update(username string, balanceToAdd int) (model.
 
 	// Update without any problems, since we handled all errors
 	return s.repo.Update(username, newBalance), nil
+}
+
+func (s *DefaultWalletService) Delete(username string) error {
+	if !s.repo.Exists(username) {
+		return ErrWalletNotExists
+	}
+
+	s.repo.Delete(username)
+	return nil
 }
