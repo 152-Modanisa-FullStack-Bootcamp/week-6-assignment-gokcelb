@@ -35,6 +35,7 @@ type WalletService interface {
 	Get(username string) (model.Wallet, error)
 	Create(username string) model.Wallet
 	Update(username string, balance int) (model.Wallet, error)
+	Delete(username string) error
 }
 
 func NewWallet(service WalletService) *WalletHandler {
@@ -98,12 +99,17 @@ func (h *WalletHandler) HandleWalletEndpoints(w http.ResponseWriter, r *http.Req
 	username := pathsAndParams[1]
 	route.PushParam("username", username)
 
-	if r.Method == "GET" {
+	if r.Method == http.MethodGet {
 		h.Get(w, r)
-	} else if r.Method == "PUT" {
+	} else if r.Method == http.MethodPut {
 		h.Create(w, r)
-	} else if r.Method == "POST" {
+	} else if r.Method == http.MethodPost {
 		h.Update(w, r)
+	} else if r.Method == http.MethodDelete {
+		h.Delete(w, r)
+	} else {
+		w.WriteHeader(http.StatusNotFound)
+		writeErr(w, http.StatusNotFound, "Not found")
 	}
 }
 
@@ -183,4 +189,15 @@ func (h *WalletHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write(jsonResponse)
+}
+
+func (h *WalletHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	username := route.PullParam("username")
+	err := h.service.Delete(username)
+	if err != nil {
+		writeErr(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
