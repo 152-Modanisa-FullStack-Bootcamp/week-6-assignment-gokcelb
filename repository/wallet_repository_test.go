@@ -172,3 +172,15 @@ func TestUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestDelete(t *testing.T) {
+	wallets := map[string]*model.Wallet{
+		"lacin": {Username: "lacin", Balance: 100},
+		"fatma": {Username: "fatma", Balance: 500},
+	}
+	r := repository.NewWallet(wallets)
+
+	r.Delete("fatma")
+
+	assert.NotContains(t, wallets, "fatma")
+}
