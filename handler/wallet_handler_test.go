@@ -231,3 +231,39 @@ func TestHandleWalletEndpoints_RedirectsToUpdate(t *testing.T) {
 		assert.Equal(t, string(resBody), resW.Body.String())
 	})
 }
+
+func TestHandleWalletEndpoints_RedirectsToDelete(t *testing.T) {
+	t.Run("wallet deleted successfully", func(t *testing.T) {
+		resW := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodDelete, "/lacin", http.NoBody)
+
+		mockService := createMockWalletService(t)
+		mockService.EXPECT().Delete("lacin").Return(nil).Times(1)
+
+		h := handler.NewWallet(mockService)
+		h.HandleWalletEndpoints(resW, req)
+
+		assert.Equal(t, http.StatusNoContent, resW.Result().StatusCode)
+		assert.Equal(t, "", resW.Body.String())
+	})
+
+	t.Run("wallet couldn't be deleted", func(t *testing.T) {
+		resW := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodDelete, "/doga", http.NoBody)
+
+		mockService := createMockWalletService(t)
+		mockService.EXPECT().Delete("doga").Return(service.ErrWalletNotExists).Times(1)
+
+		h := handler.NewWallet(mockService)
+		h.HandleWalletEndpoints(resW, req)
+
+		errorResponse := errorResponseBody{
+			Code:    http.StatusNotFound,
+			Message: service.ErrWalletNotExists.Error(),
+		}
+		resBody, _ := json.Marshal(errorResponse)
+
+		assert.Equal(t, http.StatusNotFound, resW.Result().StatusCode)
+		assert.Equal(t, string(resBody), resW.Body.String())
+	})
+}
