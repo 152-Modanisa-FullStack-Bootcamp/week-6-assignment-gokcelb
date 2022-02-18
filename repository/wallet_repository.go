@@ -40,3 +40,7 @@ func (r *DefaultWalletRepository) Update(username string, balance int) model.Wal
 	r.wallets[username].Balance = balance
 	return *r.wallets[username]
 }
+
+func (r *DefaultWalletRepository) Delete(username string) {
+	delete(r.wallets, username)
+}
